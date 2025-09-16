@@ -1,0 +1,74 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "transqa"
+version = "0.1.0"
+description = "Web Translation QA Tool - Detect translation errors and language leakage"
+authors = ["Translation QA Team"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "transqa", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pydantic = "^2.5.0"
+typer = {extras = ["all"], version = "^0.9.0"}
+rich = "^13.7.0"
+requests = "^2.31.0"
+beautifulsoup4 = "^4.12.0"
+trafilatura = "^1.7.0"
+fasttext-wheel = "^0.9.2"
+language-tool-python = "^2.7.1"
+langid-py = "^1.1.6"
+PySide6 = {version = "^6.6.0", optional = true}
+qdarktheme = {version = "^2.1.0", optional = true}
+playwright = {version = "^1.40.0", optional = true}
+spacy = {version = "^3.7.0", optional = true}
+symspell = "^6.7.7"
+tomli-w = "^1.0.0"
+tomli = {version = "^2.0.1", markers = "python_version < '3.11'"}
+platformdirs = "^4.1.0"
+
+[tool.poetry.extras]
+full = ["playwright", "spacy", "PySide6", "qdarktheme"]
+render = ["playwright"]
+nlp = ["spacy"]
+gui = ["PySide6", "qdarktheme"]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-asyncio = "^0.21.0"
+black = "^23.0.0"
+isort = "^5.12.0"
+mypy = "^1.8.0"
+pre-commit = "^3.6.0"
+
+[tool.poetry.scripts]
+transqa = "transqa.cli:app"
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
+
+[tool.isort]
+profile = "black"
+src_paths = ["src", "tests"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = [
+    "trafilatura.*",
+    "fasttext.*",
+    "langid.*",
+    "language_tool_python.*",
+    "symspell.*",
+]
+ignore_missing_imports = true

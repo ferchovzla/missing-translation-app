@@ -1,0 +1,157 @@
+# TransQA Whitelist
+# 
+# This file contains terms that should be ignored during language detection
+# and quality analysis. One term per line.
+#
+# Format: term[:language]
+# If no language is specified, the term is whitelisted for all languages.
+#
+# Examples:
+# - Brand names: Google, Microsoft, GitHub
+# - Technical terms: API, HTTP, JSON, XML, HTML, CSS, JavaScript
+# - Acronyms: QA, UI, UX, SEO, CMS
+# - Proper nouns: Madrid, London, Amsterdam
+
+# Brand names and companies
+Google
+Microsoft
+GitHub
+Apple
+Facebook
+Twitter
+Instagram
+LinkedIn
+Amazon
+Netflix
+Spotify
+Uber
+
+# Technical terms
+API
+HTTP
+HTTPS
+JSON
+XML
+HTML
+CSS
+JavaScript
+TypeScript
+React
+Vue
+Angular
+Node.js
+Python
+Java
+PHP
+MySQL
+PostgreSQL
+MongoDB
+Redis
+
+# Acronyms and abbreviations  
+QA
+UI
+UX
+SEO
+CMS
+CRM
+ERP
+SaaS
+PaaS
+IaaS
+REST
+SOAP
+JWT
+OAuth
+SSL
+TLS
+VPN
+CDN
+DNS
+CPU
+GPU
+RAM
+SSD
+HDD
+USB
+PDF
+CSV
+PNG
+JPG
+JPEG
+SVG
+GIF
+MP3
+MP4
+ZIP
+URL
+URI
+UUID
+GUID
+
+# Units and measurements
+MB
+GB
+TB
+KB
+Hz
+GHz
+MHz
+px
+em
+rem
+%
+
+# File extensions (without dot)
+txt:en
+pdf:en
+doc:en
+docx:en
+xls:en
+xlsx:en
+ppt:en
+pptx:en
+zip:en
+rar:en
+
+# Common technical terms that might appear in multiple languages
+email
+e-mail
+online
+offline
+website
+web
+app
+mobile
+desktop
+software
+hardware
+database
+server
+client
+admin
+login
+logout
+signup
+download
+upload
+click
+scroll
+drag
+drop
+copy
+paste
+save
+delete
+edit
+create
+update
+refresh
+load
+loading
+
+# Placeholder text (often appears in untranslated content)
+Lorem:en
+ipsum:en
+dolor:en
+amet:en

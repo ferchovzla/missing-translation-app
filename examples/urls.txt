@@ -1,0 +1,18 @@
+# Example URLs for TransQA batch processing
+# Lines starting with # are ignored
+
+# English websites
+https://www.example.com
+https://www.github.com
+https://docs.python.org
+
+# Spanish websites  
+https://www.elmundo.es
+https://www.rtve.es
+
+# Dutch websites
+https://www.nu.nl
+https://www.nos.nl
+
+# Mixed language sites (good for testing language detection)
+https://www.wikipedia.org

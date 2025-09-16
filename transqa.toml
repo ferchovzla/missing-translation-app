@@ -1,0 +1,75 @@
+[target]
+language = "en"  # es|en|nl
+render_js = false
+
+[rules]
+# Threshold for language leakage detection (0.0-1.0)
+leak_threshold = 0.08
+
+# CSS selectors to ignore during extraction
+ignore_selectors = [
+    ".visually-hidden",
+    ".sr-only", 
+    "script",
+    "style",
+    "[aria-hidden='true']",
+    "[style*='display: none']",
+    "[style*='visibility: hidden']"
+]
+
+# Path to whitelist file for known exceptions
+whitelist = "whitelist.txt"
+
+# Maximum tokens to sample for language detection per block
+max_sample_tokens = 200
+
+[languagetool]
+# LanguageTool server configuration
+server_url = "http://localhost:8081"
+local_server = true
+timeout = 30
+
+# Enable/disable specific rule categories
+rules = [
+    "GRAMMAR",
+    "SPELLING", 
+    "STYLE",
+    "PUNCTUATION",
+    "TYPOGRAPHY"
+]
+
+[spellcheck]
+# Enable enhanced spellchecking with SymSpell
+enabled = true
+max_suggestions = 3
+
+[fetcher]
+# HTTP request configuration
+timeout = 30
+max_retries = 3
+user_agent = "TransQA/1.0 (+https://github.com/transqa/transqa)"
+
+# Playwright configuration (when render_js = true)
+page_load_timeout = 30000
+network_idle_timeout = 2000
+viewport_width = 1280
+viewport_height = 720
+
+[export]
+# Export format preferences
+default_format = "json"
+include_context = true
+context_chars = 100
+
+[ui]
+# Desktop UI preferences  
+theme = "auto"  # auto|light|dark
+window_width = 1200
+window_height = 800
+auto_save_results = true
+
+[logging]
+level = "INFO"  # DEBUG|INFO|WARNING|ERROR
+file = "transqa.log"
+max_size_mb = 10
+backup_count = 3
