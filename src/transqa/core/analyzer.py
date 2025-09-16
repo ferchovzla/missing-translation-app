@@ -34,8 +34,8 @@ class TransQAAnalyzer(BaseAnalyzer):
         self.verifier = None
         
         # Timeouts and error handling
-        self.analysis_timeout = config.fetcher.get('timeout', 15) * 3  # 3x fetch timeout
-        self.max_analysis_time = config.fetcher.get('max_analysis_time', 60)  # Max 60s per URL
+        self.analysis_timeout = config.fetcher.timeout * 3  # 3x fetch timeout
+        self.max_analysis_time = getattr(config.fetcher, 'max_analysis_time', 60)  # Max 60s per URL
         
         # State tracking
         self._initialized = False

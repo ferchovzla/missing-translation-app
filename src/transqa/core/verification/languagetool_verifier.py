@@ -5,7 +5,8 @@ import time
 from typing import Dict, List, Optional
 
 from transqa.core.verification.base import BaseVerifier
-from transqa.core.interfaces import Issue, IssueType, Severity, TextBlock, VerificationError
+from transqa.core.interfaces import TextBlock, VerificationError
+from transqa.models.issue import Issue, IssueType, Severity
 
 logger = logging.getLogger(__name__)
 

@@ -525,7 +525,7 @@ def _export_results(batch_result: BatchResult, output_path: Path, format: str) -
         
         if format == "json":
             with open(output_path, 'w', encoding='utf-8') as f:
-                json.dump(batch_result.dict(), f, indent=2, ensure_ascii=False)
+                json.dump(batch_result.model_dump(), f, indent=2, ensure_ascii=False)
         
         elif format == "csv":
             with open(output_path, 'w', newline='', encoding='utf-8') as f:

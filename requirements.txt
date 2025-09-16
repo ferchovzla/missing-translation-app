@@ -18,7 +18,6 @@ symspellpy>=6.7.7
 # Configuration
 tomli>=2.0.1;python_version<"3.11"
 tomli-w>=1.0.0
-
 # Optional dependencies for full functionality
 # Uncomment if you want full features:
 # playwright>=1.40.0

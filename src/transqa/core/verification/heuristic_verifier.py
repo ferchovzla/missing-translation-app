@@ -5,7 +5,8 @@ import re
 from typing import Dict, List, Optional, Set
 
 from transqa.core.verification.base import BaseVerifier
-from transqa.core.interfaces import Issue, IssueType, Severity, TextBlock
+from transqa.core.interfaces import TextBlock
+from transqa.models.issue import Issue, IssueType, Severity
 
 logger = logging.getLogger(__name__)
 
@@ -271,7 +272,7 @@ class HeuristicVerifier(BaseVerifier):
         issues = []
         
         # Check for inconsistent quotation marks
-        quotes = re.findall(r'["""\'\'']', text)
+        quotes = re.findall(r'[""\'\'"\']', text)
         if len(quotes) >= 4:  # At least 2 pairs
             quote_types = set(quotes)
             if len(quote_types) > 2:  # More than 2 different quote types

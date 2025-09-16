@@ -5,7 +5,8 @@ import re
 from abc import ABC, abstractmethod
 from typing import List, Optional, Set
 
-from transqa.core.interfaces import BaseAnalyzer, Issue, IssueType, Severity, TextBlock
+from transqa.core.interfaces import BaseAnalyzer, TextBlock
+from transqa.models.issue import Issue, IssueType, Severity
 
 logger = logging.getLogger(__name__)
 

@@ -5,7 +5,8 @@ import re
 from typing import List, Optional, Set
 
 from transqa.core.verification.base import BaseVerifier
-from transqa.core.interfaces import Issue, IssueType, Severity, TextBlock
+from transqa.core.interfaces import TextBlock
+from transqa.models.issue import Issue, IssueType, Severity
 
 logger = logging.getLogger(__name__)
 
@@ -463,8 +464,8 @@ class PlaceholderValidator(BaseVerifier):
         
         quote_rules = self.QUOTE_STYLES[target_lang]
         
-        # Find all quotes
-        quote_pattern = re.compile(r'["""\'\'']')
+        # Find all quotes (straight and curly)
+        quote_pattern = re.compile(r'[""\'\'"\']')
         quotes = list(quote_pattern.finditer(text))
         
         if len(quotes) < 2:

@@ -93,16 +93,8 @@ class FetcherFactory:
         Returns:
             Configured fetcher instance
         """
-        fetcher_config = {
-            'timeout': app_config.fetcher.timeout,
-            'max_retries': app_config.fetcher.max_retries,
-            'user_agent': app_config.fetcher.user_agent,
-            'headers': app_config.fetcher.headers,
-            'page_load_timeout': app_config.fetcher.page_load_timeout,
-            'network_idle_timeout': app_config.fetcher.network_idle_timeout,
-            'viewport_width': app_config.fetcher.viewport_width,
-            'viewport_height': app_config.fetcher.viewport_height,
-        }
+        # Convert Pydantic model to dictionary for compatibility with existing .get() usage
+        fetcher_config = app_config.fetcher.model_dump()
         
         return FetcherFactory.create_fetcher(
             render_js=app_config.target.render_js,

@@ -47,9 +47,11 @@ class ExtractorFactory:
         Returns:
             Configured extractor instance
         """
+        # Convert rules config to dictionary and add extractor-specific settings  
+        rules_dict = app_config.rules.model_dump()
         extractor_config = {
-            'ignore_selectors': app_config.rules.ignore_selectors,
-            'min_text_length': getattr(app_config.rules, 'min_text_length', 10),
+            'ignore_selectors': rules_dict.get('ignore_selectors', []),
+            'min_text_length': rules_dict.get('min_text_length', 10),
             'extract_metadata': True,
             'extract_links': False,
             'preserve_formatting': False,

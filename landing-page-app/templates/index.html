@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fas fa-language"></i>
+                <span>TransQA</span>
+            </div>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#demo">Demo</a>
+                <a href="/docs" target="_blank">API Docs</a>
+                <a href="https://github.com/transqa/transqa" target="_blank">GitHub</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1>Translation Quality Assurance Made Simple</h1>
+                <p class="hero-subtitle">
+                    Automatically detect translation errors, language leakage, and quality issues in your web content.
+                    Support for Spanish, English, and Dutch.
+                </p>
+                <div class="hero-buttons">
+                    <button class="btn btn-primary" onclick="scrollToDemo()">
+                        <i class="fas fa-play"></i>
+                        Try Demo
+                    </button>
+                    <a href="/docs" class="btn btn-secondary" target="_blank">
+                        <i class="fas fa-book"></i>
+                        View API
+                    </a>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <div class="stat-number">3</div>
+                        <div class="stat-label">Languages</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">5+</div>
+                        <div class="stat-label">Issue Types</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">99%</div>
+                        <div class="stat-label">Accuracy</div>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-image">
+                <div class="hero-illustration">
+                    <i class="fas fa-globe-americas"></i>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <div class="section-header">
+                <h2>Powerful Quality Assurance Features</h2>
+                <p>Comprehensive translation quality analysis with advanced detection algorithms</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h3>Language Leak Detection</h3>
+                    <p>Automatically identify untranslated content and mixed language fragments that shouldn't be there.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-spell-check"></i>
+                    </div>
+                    <h3>Grammar & Spelling</h3>
+                    <p>Advanced grammar and spelling verification using LanguageTool integration for precise error detection.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-balance-scale"></i>
+                    </div>
+                    <h3>Consistency Checking</h3>
+                    <p>Ensure consistent terminology, formatting, and style throughout your translated content.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <h3>Placeholder Validation</h3>
+                    <p>Verify that technical placeholders, variables, and formatting tokens are properly preserved.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h3>Real-time Analysis</h3>
+                    <p>Fast processing with detailed progress tracking and comprehensive error reporting.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <h3>Configurable Rules</h3>
+                    <p>Customize detection thresholds, rules, and whitelists to match your specific requirements.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section id="demo" class="demo">
+        <div class="container">
+            <div class="section-header">
+                <h2>Try TransQA Live</h2>
+                <p>Enter any URL and see translation quality analysis in action</p>
+            </div>
+            
+            <div class="demo-container">
+                <div class="demo-form">
+                    <form id="analysisForm">
+                        <div class="form-group">
+                            <label for="url">Website URL</label>
+                            <input type="url" id="url" name="url" placeholder="https://example.com" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="language">Target Language</label>
+                            <select id="language" name="language" required>
+                                <option value="">Select language...</option>
+                                <option value="es">Spanish (Español)</option>
+                                <option value="en">English</option>
+                                <option value="nl">Dutch (Nederlands)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="renderJs" name="renderJs">
+                                <span class="checkmark"></span>
+                                Render JavaScript content
+                            </label>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary btn-full" id="analyzeBtn">
+                            <i class="fas fa-search"></i>
+                            <span>Analyze Quality</span>
+                        </button>
+                    </form>
+                </div>
+                
+                <div class="demo-results" id="results" style="display: none;">
+                    <div class="results-header">
+                        <h3>Analysis Results</h3>
+                        <div class="results-url"></div>
+                    </div>
+                    
+                    <div class="results-stats">
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalIssues">0</div>
+                            <div class="stat-name">Total Issues</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="processingTime">0s</div>
+                            <div class="stat-name">Processing Time</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="targetPercentage">0%</div>
+                            <div class="stat-name">Target Language</div>
+                        </div>
+                    </div>
+                    
+                    <div class="results-content">
+                        <div class="issues-section">
+                            <h4>Detected Issues</h4>
+                            <div id="issuesList"></div>
+                        </div>
+                        
+                        <div class="languages-section">
+                            <h4>Language Distribution</h4>
+                            <div id="languagesList"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="demo-loading" id="loading" style="display: none;">
+                    <div class="loading-spinner"></div>
+                    <p>Analyzing your website...</p>
+                </div>
+                
+                <div class="demo-error" id="error" style="display: none;">
+                    <div class="error-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h4>Analysis Error</h4>
+                    <p id="errorMessage"></p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="footer-logo">
+                        <i class="fas fa-language"></i>
+                        <span>TransQA</span>
+                    </div>
+                    <p>Professional translation quality assurance for modern web applications.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="/docs">API Documentation</a></li>
+                        <li><a href="/redoc">API Reference</a></li>
+                        <li><a href="https://github.com/transqa/transqa">GitHub Repository</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Languages</h4>
+                    <ul>
+                        <li>Spanish (Español)</li>
+                        <li>English</li>
+                        <li>Dutch (Nederlands)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 TransQA. Open source translation quality assurance.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
