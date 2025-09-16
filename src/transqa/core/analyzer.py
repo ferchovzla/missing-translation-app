@@ -1,81 +1,102 @@
 """Main analyzer orchestrating all TransQA components."""
 
+import logging
 import time
 from typing import Dict, List, Optional
 from urllib.parse import urlparse
 
-from transqa.core.interfaces import (
-    BaseAnalyzer,
-    Extractor,
-    Fetcher,
-    LanguageDetector,
-    LanguageLeakDetector,
-    PlaceholderValidator,
-    Verifier,
-    WhitelistManager,
-)
+from transqa.core.interfaces import BaseAnalyzer, FetchError, ExtractionError, LanguageDetectionError, VerificationError
+from transqa.core.fetchers import FetcherFactory
+from transqa.core.extractors import ExtractorFactory
+from transqa.core.language import LanguageDetectorFactory
+from transqa.core.verification import VerifierFactory
 from transqa.models.config import TransQAConfig
-from transqa.models.issue import Issue
+from transqa.models.issue import Issue, IssueType, Severity
 from transqa.models.result import AnalysisStats, PageResult
+
+logger = logging.getLogger(__name__)
 
 
 class TransQAAnalyzer(BaseAnalyzer):
     """Main analyzer for web page translation quality."""
     
-    def __init__(
-        self,
-        config: TransQAConfig,
-        fetcher: Fetcher,
-        extractor: Extractor,
-        language_detector: LanguageDetector,
-        leak_detector: LanguageLeakDetector,
-        verifier: Verifier,
-        placeholder_validator: PlaceholderValidator,
-        whitelist_manager: Optional[WhitelistManager] = None,
-    ):
-        """Initialize the analyzer with all components."""
+    def __init__(self, config: TransQAConfig):
+        """Initialize the analyzer with configuration."""
         super().__init__(config.dict())
         self.config = config
-        self.fetcher = fetcher
-        self.extractor = extractor
-        self.language_detector = language_detector
-        self.leak_detector = leak_detector
-        self.verifier = verifier
-        self.placeholder_validator = placeholder_validator
-        self.whitelist_manager = whitelist_manager
+        
+        # Component instances (will be created in initialize())
+        self.fetcher = None
+        self.extractor = None
+        self.language_detector = None
+        self.verifier = None
+        
+        # State tracking
+        self._initialized = False
     
     def initialize(self) -> None:
-        """Initialize all components."""
-        # Initialize components that need setup
-        for component in [
-            self.fetcher,
-            self.extractor, 
-            self.language_detector,
-            self.leak_detector,
-            self.verifier,
-            self.placeholder_validator,
-        ]:
-            if hasattr(component, 'initialize'):
-                component.initialize()
+        """Initialize all components using factories."""
+        if self._initialized:
+            return
+            
+        logger.info("Initializing TransQA analyzer components...")
         
-        if self.whitelist_manager and hasattr(self.whitelist_manager, 'initialize'):
-            self.whitelist_manager.initialize()
+        try:
+            # Create fetcher
+            self.fetcher = FetcherFactory.create_from_config(self.config)
+            logger.info(f"Created fetcher: {self.fetcher.__class__.__name__}")
+            
+            # Create extractor
+            self.extractor = ExtractorFactory.create_from_config(self.config)
+            logger.info(f"Created extractor: {self.extractor.__class__.__name__}")
+            
+            # Create language detector
+            self.language_detector = LanguageDetectorFactory.create_from_config(self.config)
+            logger.info(f"Created language detector: {self.language_detector.__class__.__name__}")
+            
+            # Create verifier
+            self.verifier = VerifierFactory.create_from_config(self.config)
+            logger.info(f"Created verifier: {self.verifier.__class__.__name__}")
+            
+            # Initialize all components
+            for component_name, component in [
+                ("fetcher", self.fetcher),
+                ("extractor", self.extractor),
+                ("language_detector", self.language_detector),
+                ("verifier", self.verifier),
+            ]:
+                try:
+                    if hasattr(component, 'initialize'):
+                        component.initialize()
+                    logger.debug(f"Initialized {component_name}")
+                except Exception as e:
+                    logger.error(f"Failed to initialize {component_name}: {e}")
+                    raise
+            
+            self._initialized = True
+            logger.info("TransQA analyzer initialized successfully")
+            
+        except Exception as e:
+            logger.error(f"Failed to initialize TransQA analyzer: {e}")
+            raise
     
     def cleanup(self) -> None:
         """Cleanup all components."""
-        for component in [
-            self.fetcher,
-            self.extractor,
-            self.language_detector, 
-            self.leak_detector,
-            self.verifier,
-            self.placeholder_validator,
+        for component_name, component in [
+            ("fetcher", self.fetcher),
+            ("extractor", self.extractor),
+            ("language_detector", self.language_detector),
+            ("verifier", self.verifier),
         ]:
-            if hasattr(component, 'cleanup'):
-                component.cleanup()
+            try:
+                if component and hasattr(component, 'cleanup'):
+                    component.cleanup()
+                logger.debug(f"Cleaned up {component_name}")
+            except Exception as e:
+                logger.warning(f"Error cleaning up {component_name}: {e}")
         
-        if self.whitelist_manager and hasattr(self.whitelist_manager, 'cleanup'):
-            self.whitelist_manager.cleanup()
+        self._initialized = False
+        logger.info("TransQA analyzer cleanup completed")
     
     def analyze_url(
         self, 
@@ -99,6 +120,7 @@ class TransQAAnalyzer(BaseAnalyzer):
             render_js = self.config.target.render_js
         
         start_time = time.time()
+        logger.info(f"Starting analysis of {url} (target: {target_lang}, render_js: {render_js})")
         
         # Initialize result
         result = PageResult(
@@ -111,19 +133,32 @@ class TransQAAnalyzer(BaseAnalyzer):
         try:
             # 1. Fetch content
             fetch_start = time.time()
-            html_content = self.fetcher.get(url, render=render_js)
-            fetch_duration = time.time() - fetch_start
+            logger.debug("Fetching HTML content...")
             
-            # 2. Extract text
+            if hasattr(self.fetcher, 'get_with_metadata'):
+                fetch_result = self.fetcher.get_with_metadata(url, render=render_js)
+                html_content = fetch_result['content']
+                result.page_title = fetch_result.get('title', '')
+            else:
+                html_content = self.fetcher.get(url, render=render_js)
+            
+            fetch_duration = time.time() - fetch_start
+            logger.info(f"Fetched {len(html_content)} characters in {fetch_duration:.2f}s")
+            
+            # 2. Extract text blocks
             extract_start = time.time()
-            extraction_result = self.extractor.extract_blocks(
-                html_content,
-                ignore_selectors=self.config.rules.ignore_selectors
-            )
+            logger.debug("Extracting text blocks...")
+            
+            extraction_result = self.extractor.extract_blocks(html_content)
             extract_duration = time.time() - extract_start
             
+            if not extraction_result.success:
+                raise ExtractionError(extraction_result.error_message or "Text extraction failed")
+            
+            logger.info(f"Extracted {len(extraction_result.blocks)} blocks in {extract_duration:.2f}s")
+            
             # Update result with extracted data
-            result.page_title = extraction_result.title
+            result.page_title = result.page_title or extraction_result.title
             result.page_lang = extraction_result.declared_language
             result.meta_description = extraction_result.meta_description
             result.extracted_text = extraction_result.raw_text
@@ -133,57 +168,57 @@ class TransQAAnalyzer(BaseAnalyzer):
             language_distribution: Dict[str, int] = {}
             total_tokens = 0
             
-            for block in extraction_result.blocks:
+            logger.debug(f"Analyzing {len(extraction_result.blocks)} text blocks...")
+            
+            for i, block in enumerate(extraction_result.blocks):
                 if not block.text.strip():
                     continue
                 
-                # Language detection for the block
-                lang_result = self.language_detector.detect_block(block.text)
-                lang_code = lang_result.detected_language
-                language_distribution[lang_code] = language_distribution.get(lang_code, 0) + len(block.text.split())
-                total_tokens += len(block.text.split())
+                block_tokens = len(block.text.split())
+                total_tokens += block_tokens
                 
-                # Detect language leakage
-                leak_issues = self.leak_detector.detect_leakage(
-                    block.text,
-                    target_lang,
-                    threshold=self.config.rules.leak_threshold,
-                    context=block
-                )
-                all_issues.extend(leak_issues)
-                
-                # Grammar, spelling, style verification
-                if lang_code == target_lang or len(leak_issues) == 0:
-                    # Only verify if it's the target language or no leakage detected
-                    verify_issues = self.verifier.check(block.text, target_lang, context=block)
-                    all_issues.extend(verify_issues)
-                
-                # Placeholder validation
-                placeholder_issues = self.placeholder_validator.validate_placeholders(
-                    block.text, context=block
-                )
-                all_issues.extend(placeholder_issues)
-                
-                # Number and punctuation validation
-                format_issues = self.placeholder_validator.validate_numbers_and_formats(
-                    block.text, target_lang
-                )
-                all_issues.extend(format_issues)
-                
-                punctuation_issues = self.placeholder_validator.validate_punctuation_spacing(
-                    block.text, target_lang
-                )
-                all_issues.extend(punctuation_issues)
+                try:
+                    # Language detection for the block
+                    lang_result = self.language_detector.detect_block(block.text)
+                    lang_code = lang_result.detected_language
+                    language_distribution[lang_code] = language_distribution.get(lang_code, 0) + block_tokens
+                    
+                    # Skip further analysis if language detection failed
+                    if lang_code == 'unknown':
+                        continue
+                    
+                    # Check for language leakage using the verifier (which includes heuristic checks)
+                    if lang_code != target_lang:
+                        # Create language leakage issue
+                        leak_issue = Issue(
+                            type=IssueType.LANGUAGE_LEAK,
+                            severity=Severity.ERROR,
+                            message=f"Text appears to be in {lang_code.upper()} instead of {target_lang.upper()}",
+                            target_lang=target_lang,
+                            snippet=block.text[:100] + "..." if len(block.text) > 100 else block.text,
+                            xpath=block.xpath,
+                            offset_start=block.offset_start,
+                            offset_end=block.offset_end,
+                            confidence=lang_result.confidence,
+                            detected_lang=lang_code,
+                            detected_lang_confidence=lang_result.confidence,
+                            source_url=url
+                        )
+                        all_issues.append(leak_issue)
+                    
+                    # Grammar, spelling, style verification for target language content
+                    if lang_code == target_lang or lang_result.confidence < 0.7:  # Check if uncertain
+                        verify_issues = self.verifier.check(block.text, target_lang, context=block)
+                        for issue in verify_issues:
+                            issue.source_url = url
+                            issue.xpath = block.xpath
+                        all_issues.extend(verify_issues)
+                    
+                except Exception as e:
+                    logger.warning(f"Error analyzing block {i}: {e}")
+                    continue
             
-            # 4. Filter whitelisted terms if whitelist manager available
-            if self.whitelist_manager:
-                all_issues = self._filter_whitelisted_issues(all_issues, target_lang)
-            
-            # 5. Add source URL to all issues
-            for issue in all_issues:
-                issue.source_url = url
-            
-            # 6. Calculate statistics
+            # 4. Calculate statistics
             analysis_duration = time.time() - start_time
             
             stats = self._calculate_stats(
@@ -201,12 +236,44 @@ class TransQAAnalyzer(BaseAnalyzer):
             result.issues = all_issues
             result.stats = stats
             
-        except Exception as e:
-            # Create error issue
+            logger.info(f"Analysis completed: {len(all_issues)} issues found in {analysis_duration:.2f}s")
+            
+        except FetchError as e:
+            logger.error(f"Fetch error for {url}: {e}")
             error_issue = Issue(
-                type="system_error",
-                severity="critical",
+                type=IssueType.GRAMMAR,  # Use existing enum value
+                severity=Severity.CRITICAL,
+                message=f"Failed to fetch content: {str(e)}",
+                target_lang=target_lang,
+                snippet="",
+                xpath="/",
+                offset_start=0,
+                offset_end=0,
+                source_url=url
+            )
+            result.issues = [error_issue]
+            
+        except (ExtractionError, LanguageDetectionError, VerificationError) as e:
+            logger.error(f"Analysis error for {url}: {e}")
+            error_issue = Issue(
+                type=IssueType.GRAMMAR,  # Use existing enum value
+                severity=Severity.CRITICAL,
                 message=f"Analysis failed: {str(e)}",
+                target_lang=target_lang,
+                snippet="",
+                xpath="/",
+                offset_start=0,
+                offset_end=0,
+                source_url=url
+            )
+            result.issues = [error_issue]
+            
+        except Exception as e:
+            logger.exception(f"Unexpected error analyzing {url}: {e}")
+            error_issue = Issue(
+                type=IssueType.GRAMMAR,  # Use existing enum value
+                severity=Severity.CRITICAL,
+                message=f"Unexpected error: {str(e)}",
                 target_lang=target_lang,
                 snippet="",
                 xpath="/",
@@ -218,28 +285,10 @@ class TransQAAnalyzer(BaseAnalyzer):
         
         return result
     
-    def _filter_whitelisted_issues(self, issues: List[Issue], target_lang: str) -> List[Issue]:
-        """Filter out issues for whitelisted terms."""
-        if not self.whitelist_manager:
-            return issues
-        
-        filtered_issues = []
-        for issue in issues:
-            # Extract potential terms from the issue snippet
-            # This is a simple implementation - could be enhanced
-            terms = issue.snippet.split()
-            is_whitelisted = False
-            
-            for term in terms:
-                cleaned_term = term.strip('.,;:!?"\'()[]{}')
-                if self.whitelist_manager.is_whitelisted(cleaned_term, target_lang):
-                    is_whitelisted = True
-                    break
-            
-            if not is_whitelisted:
-                filtered_issues.append(issue)
-        
-        return filtered_issues
+    def ensure_initialized(self) -> None:
+        """Ensure analyzer is initialized."""
+        if not self._initialized:
+            self.initialize()
     
     def _calculate_stats(
         self,
@@ -265,8 +314,8 @@ class TransQAAnalyzer(BaseAnalyzer):
         issues_by_severity = {}
         
         for issue in issues:
-            issues_by_type[issue.type] = issues_by_type.get(issue.type, 0) + 1
-            issues_by_severity[issue.severity] = issues_by_severity.get(issue.severity, 0) + 1
+            issues_by_type[str(issue.type)] = issues_by_type.get(str(issue.type), 0) + 1
+            issues_by_severity[str(issue.severity)] = issues_by_severity.get(str(issue.severity), 0) + 1
         
         # Calculate quality scores
         critical_count = issues_by_severity.get("critical", 0)
@@ -275,7 +324,7 @@ class TransQAAnalyzer(BaseAnalyzer):
         
         # Overall score: penalize critical errors heavily, errors moderately, warnings lightly
         penalty = (critical_count * 0.5) + (error_count * 0.2) + (warning_count * 0.05)
-        overall_score = max(0.0, 1.0 - min(penalty, 1.0))
+        overall_score = max(0.0, 1.0 - min(penalty / max(1, len(extraction_result.blocks)), 1.0))
         
         # Language purity score
         target_lang_percentage = lang_percentages.get(target_lang, 0.0)
@@ -284,7 +333,7 @@ class TransQAAnalyzer(BaseAnalyzer):
         return AnalysisStats(
             total_tokens=total_tokens,
             total_blocks=len(extraction_result.blocks),
-            total_chars=len(extraction_result.raw_text),
+            total_chars=len(extraction_result.raw_text or ""),
             language_distribution=lang_percentages,
             issues_by_type=issues_by_type,
             issues_by_severity=issues_by_severity,
@@ -292,7 +341,7 @@ class TransQAAnalyzer(BaseAnalyzer):
             fetch_duration_seconds=fetch_duration,
             extraction_duration_seconds=extract_duration,
             html_size_bytes=html_size,
-            extracted_text_size=len(extraction_result.raw_text),
+            extracted_text_size=len(extraction_result.raw_text or ""),
             overall_score=overall_score,
             language_purity_score=language_purity_score,
         )
