@@ -1,0 +1,18 @@
+# Core dependencies (minimal for basic functionality)
+pydantic>=2.5.0
+typer[all]>=0.9.0
+rich>=13.7.0
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+trafilatura>=1.7.0
+platformdirs>=4.1.0
+
+# Language detection (basic)
+langid>=1.1.6
+
+# Text verification (basic)
+language-tool-python>=2.7.1
+
+# Configuration
+tomli>=2.0.1;python_version<"3.11"
+tomli-w>=1.0.0

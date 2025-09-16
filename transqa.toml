@@ -45,9 +45,12 @@ max_suggestions = 3
 
 [fetcher]
 # HTTP request configuration
-timeout = 30
-max_retries = 3
+timeout = 15  # Shorter timeout for faster failure detection
+max_retries = 2  # Fewer retries for faster feedback
 user_agent = "TransQA/1.0 (+https://github.com/transqa/transqa)"
+connect_timeout = 10  # Separate connect timeout
+read_timeout = 15  # Separate read timeout
+fail_fast = true  # Fail quickly on network errors
 
 # Playwright configuration (when render_js = true)
 page_load_timeout = 30000

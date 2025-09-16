@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  transqa:
+    build: .
+    container_name: transqa-analyzer
+    volumes:
+      # Mount reports directory to persist results
+      - ./reports:/app/reports
+      # Mount models directory to persist downloaded models
+      - ./models:/app/models
+      # Mount cache directory
+      - ./cache:/app/cache
+      # Mount custom config if needed
+      - ./transqa.toml:/app/transqa.toml:ro
+      - ./whitelist.txt:/app/whitelist.txt:ro
+    environment:
+      - TRANSQA_LOG_LEVEL=INFO
+      - TRANSQA_DATA_DIR=/app/data
+      - TRANSQA_MODELS_DIR=/app/models
+      - TRANSQA_CACHE_DIR=/app/cache
+    # Example command - override as needed
+    command: ["scan", "--url", "https://example.com", "--lang", "en", "--verbose"]
+    
+    # Uncomment to run interactively
+    # stdin_open: true
+    # tty: true
+
+  # Optional: LanguageTool server for better performance
+  # Uncomment if you want to run LanguageTool as a separate service
+  # languagetool:
+  #   image: erikvl87/languagetool:latest
+  #   container_name: languagetool-server
+  #   ports:
+  #     - "8081:8010"
+  #   environment:
+  #     - langtool_languageModel=/ngrams
+  #     - Java_Xms=512m
+  #     - Java_Xmx=1g
+
+networks:
+  default:
+    name: transqa-network

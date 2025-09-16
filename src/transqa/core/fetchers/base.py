@@ -76,25 +76,63 @@ class BaseFetcher(BaseAnalyzer, ABC):
             raise FetchError(f"URL validation failed: {e}")
     
     def _retry_request(self, func, *args, **kwargs):
-        """Execute a function with retry logic."""
+        """Execute a function with retry logic and absolute timeout."""
         last_exception = None
+        start_time = time.time()
+        max_total_time = getattr(self, 'max_total_time', 30)  # 30 seconds max total
         
-        for attempt in range(self.max_retries + 1):
+        # Check for fail_fast mode
+        fail_fast = getattr(self, 'fail_fast', False)
+        
+        # Limit retries to prevent infinite loops
+        actual_retries = min(self.max_retries, 3) if not fail_fast else 0
+        
+        for attempt in range(actual_retries + 1):
+            # Check absolute timeout
+            elapsed = time.time() - start_time
+            if elapsed > max_total_time:
+                raise FetchError(f"Request timed out after {elapsed:.1f}s (absolute limit: {max_total_time}s)")
+            
             try:
                 return func(*args, **kwargs)
             
+            except (requests.exceptions.ConnectTimeout, requests.exceptions.ReadTimeout) as e:
+                # Don't retry on timeout errors if fail_fast is enabled
+                if fail_fast:
+                    raise FetchError(f"Timeout error (fail fast mode): {e}")
+                last_exception = e
+                logger.warning(f"Timeout on attempt {attempt + 1}: {e}")
+            
+            except requests.exceptions.ConnectionError as e:
+                # Don't retry connection errors if fail_fast is enabled
+                if fail_fast:
+                    raise FetchError(f"Connection error (fail fast mode): {e}")
+                last_exception = e
+                logger.warning(f"Connection error on attempt {attempt + 1}: {e}")
+            
+            except requests.exceptions.HTTPError as e:
+                # Don't retry client errors (4xx) but retry server errors (5xx)
+                if hasattr(e, 'response') and e.response is not None:
+                    status_code = e.response.status_code
+                    if 400 <= status_code < 500:
+                        raise FetchError(f"Client error {status_code}: {e}")
+                last_exception = e
+                logger.warning(f"HTTP error on attempt {attempt + 1}: {e}")
+            
             except (requests.RequestException, Exception) as e:
                 last_exception = e
-                
-                if attempt < self.max_retries:
-                    wait_time = 2 ** attempt  # Exponential backoff
-                    logger.warning(f"Attempt {attempt + 1} failed: {e}. Retrying in {wait_time}s...")
-                    time.sleep(wait_time)
-                else:
-                    logger.error(f"All {self.max_retries + 1} attempts failed")
+                logger.warning(f"Error on attempt {attempt + 1}: {e}")
+            
+            # If we have retries left and haven't raised an exception, wait and retry
+            if attempt < actual_retries:
+                wait_time = min(2 ** attempt, 3)  # Shorter backoff: max 3s
+                logger.warning(f"Retrying in {wait_time}s...")
+                time.sleep(wait_time)
+            else:
+                logger.error(f"All {actual_retries + 1} attempts failed")
         
         # If we get here, all retries failed
-        raise FetchError(f"Failed after {self.max_retries + 1} attempts: {last_exception}")
+        raise FetchError(f"Failed after {actual_retries + 1} attempts: {last_exception}")
     
     def _calculate_content_metrics(self, content: str, response_time: float) -> Dict[str, Union[str, int, float]]:
         """Calculate basic metrics for fetched content."""

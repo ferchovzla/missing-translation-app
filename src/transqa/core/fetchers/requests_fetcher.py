@@ -24,6 +24,13 @@ class RequestsFetcher(BaseFetcher):
         self.max_redirects = self.config.get('max_redirects', 10)
         self.verify_ssl = self.config.get('verify_ssl', True)
         self.stream = self.config.get('stream', False)
+        self.fail_fast = self.config.get('fail_fast', False)
+        
+        # Enhanced timeout handling
+        self.connect_timeout = self.config.get('connect_timeout', 10)
+        self.read_timeout = self.config.get('read_timeout', 15)
+        # Create tuple for requests: (connect_timeout, read_timeout)
+        self.timeout_tuple = (self.connect_timeout, self.read_timeout)
     
     def get(self, url: str, render: bool = False, **kwargs) -> str:
         """Fetch HTML content from a URL.
@@ -51,7 +58,7 @@ class RequestsFetcher(BaseFetcher):
             
             response = self.session.get(
                 url,
-                timeout=self.timeout,
+                timeout=self.timeout_tuple,
                 allow_redirects=self.allow_redirects,
                 verify=self.verify_ssl,
                 stream=self.stream,
@@ -73,6 +80,14 @@ class RequestsFetcher(BaseFetcher):
         
         try:
             return self._retry_request(_fetch)
+        except requests.exceptions.ConnectTimeout as e:
+            raise FetchError(f"Connection timeout for {url}: {e}")
+        except requests.exceptions.ReadTimeout as e:
+            raise FetchError(f"Read timeout for {url}: {e}")
+        except requests.exceptions.ConnectionError as e:
+            if self.fail_fast:
+                raise FetchError(f"Connection error for {url} (fail fast enabled): {e}")
+            raise FetchError(f"Connection error for {url}: {e}")
         except requests.RequestException as e:
             raise FetchError(f"HTTP request failed for {url}: {e}")
         except Exception as e:
@@ -100,7 +115,7 @@ class RequestsFetcher(BaseFetcher):
             
             response = self.session.get(
                 url,
-                timeout=self.timeout,
+                timeout=self.timeout_tuple,
                 allow_redirects=self.allow_redirects,
                 verify=self.verify_ssl,
                 stream=self.stream,
@@ -164,7 +179,7 @@ class RequestsFetcher(BaseFetcher):
             
             response = self.session.head(
                 url,
-                timeout=self.timeout,
+                timeout=self.timeout_tuple,
                 allow_redirects=self.allow_redirects,
                 verify=self.verify_ssl
             )

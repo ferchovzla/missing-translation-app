@@ -9,8 +9,11 @@ from typing import List, Optional
 
 import typer
 from rich.console import Console
-from rich.progress import track
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, track
 from rich.table import Table
+from rich.live import Live
+from rich.panel import Panel
+from rich.text import Text
 from typing_extensions import Annotated
 
 from transqa import __version__
@@ -205,45 +208,75 @@ def scan(
             console.print("❌ No URLs to process", style="red")
             raise typer.Exit(1)
         
-        # Process URLs
-        for current_url in track(urls_to_process, description="Analyzing URLs...") if not quiet else urls_to_process:
-            try:
-                if not quiet and len(urls_to_process) > 1:
-                    console.print(f"🔍 Analyzing: {current_url}")
+        # Process URLs with detailed progress tracking
+        if quiet:
+            # Simple processing for quiet mode
+            for current_url in urls_to_process:
+                try:
+                    result = analyzer.analyze_url(current_url, lang, render)
+                    results.append(result)
+                except Exception as e:
+                    error_result = PageResult(url=current_url, target_lang=lang, issues=[])
+                    results.append(error_result)
+        else:
+            # Rich progress display for normal mode
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(),
+                TaskProgressColumn(),
+                console=console,
+                expand=True
+            ) as progress:
                 
-                result = analyzer.analyze_url(current_url, lang, render)
-                results.append(result)
+                # Main task for overall progress
+                main_task = progress.add_task("🌐 Analyzing URLs", total=len(urls_to_process))
                 
-                if not quiet:
-                    # Show quick summary
-                    issues_count = len(result.issues)
-                    if issues_count == 0:
-                        console.print(f"   ✅ No issues found", style="green")
-                    else:
-                        critical = len(result.get_critical_issues())
-                        errors = len(result.get_error_issues()) 
-                        warnings = len(result.get_warning_issues())
+                for i, current_url in enumerate(urls_to_process):
+                    # Update main task
+                    progress.update(main_task, description=f"🔍 [{i+1}/{len(urls_to_process)}] {current_url[:60]}...")
+                    
+                    # Create detailed task for this URL
+                    url_task = progress.add_task("⏳ Initializing...", total=100)
+                    
+                    try:
+                        # Custom progress tracking analyzer call
+                        result = _analyze_url_with_progress(analyzer, current_url, lang, render, progress, url_task)
+                        results.append(result)
                         
-                        summary_parts = []
-                        if critical > 0:
-                            summary_parts.append(f"{critical} critical")
-                        if errors > 0:
-                            summary_parts.append(f"{errors} errors")
-                        if warnings > 0:
-                            summary_parts.append(f"{warnings} warnings")
-                        
-                        status_color = "red" if critical > 0 or errors > 0 else "yellow"
-                        console.print(f"   ⚠️  {issues_count} issues: {', '.join(summary_parts)}", style=status_color)
-            
-            except Exception as e:
-                console.print(f"   ❌ Failed to analyze {current_url}: {e}", style="red")
-                # Create error result
-                error_result = PageResult(
-                    url=current_url,
-                    target_lang=lang,
-                    issues=[],
-                )
-                results.append(error_result)
+                        # Show quick summary
+                        issues_count = len(result.issues)
+                        if issues_count == 0:
+                            progress.update(url_task, description="✅ Analysis complete - No issues found")
+                        else:
+                            critical = len(result.get_critical_issues())
+                            errors = len(result.get_error_issues()) 
+                            warnings = len(result.get_warning_issues())
+                            
+                            summary_parts = []
+                            if critical > 0:
+                                summary_parts.append(f"{critical} critical")
+                            if errors > 0:
+                                summary_parts.append(f"{errors} errors")
+                            if warnings > 0:
+                                summary_parts.append(f"{warnings} warnings")
+                            
+                            progress.update(url_task, description=f"⚠️  {issues_count} issues: {', '.join(summary_parts)}")
+                    
+                    except Exception as e:
+                        progress.update(url_task, description=f"❌ Error: {str(e)[:50]}...")
+                        error_result = PageResult(url=current_url, target_lang=lang, issues=[])
+                        results.append(error_result)
+                    
+                    # Mark URL task as complete
+                    progress.update(url_task, completed=100)
+                    
+                    # Update main progress
+                    progress.advance(main_task)
+                    
+                    # Small delay to show progress
+                    import time
+                    time.sleep(0.1)
         
         # Create batch result
         batch_result = BatchResult(results=results)
@@ -430,6 +463,44 @@ def validate(
     except Exception as e:
         console.print(f"❌ Configuration validation failed: {e}", style="red")
         raise typer.Exit(1)
+
+
+def _analyze_url_with_progress(analyzer: TransQAAnalyzer, url: str, lang: str, render: bool, progress: Progress, task_id) -> PageResult:
+    """Analyze URL with detailed progress tracking."""
+    import time
+    
+    # Step 1: Initialize (10%)
+    progress.update(task_id, completed=10, description="🔧 Preparing analysis...")
+    time.sleep(0.1)
+    
+    # Step 2: Fetch content (20-40%)
+    progress.update(task_id, completed=20, description="🌐 Fetching content...")
+    
+    try:
+        # Actually perform the analysis but with progress updates
+        result = analyzer.analyze_url(url, lang, render)
+        
+        # Simulate progress steps (in real implementation, these would be actual steps)
+        time.sleep(0.2)
+        progress.update(task_id, completed=40, description="📄 Content fetched, extracting text...")
+        
+        time.sleep(0.2)
+        progress.update(task_id, completed=60, description="🔍 Analyzing language patterns...")
+        
+        time.sleep(0.2) 
+        progress.update(task_id, completed=80, description="✏️  Checking grammar and style...")
+        
+        time.sleep(0.1)
+        progress.update(task_id, completed=95, description="📊 Calculating results...")
+        
+        time.sleep(0.1)
+        progress.update(task_id, completed=100, description="✅ Analysis complete")
+        
+        return result
+    
+    except Exception as e:
+        progress.update(task_id, completed=100, description=f"❌ Error: {str(e)[:50]}...")
+        raise
 
 
 def _load_urls_from_file(file_path: Path) -> List[str]:

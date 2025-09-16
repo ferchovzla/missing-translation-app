@@ -14,36 +14,52 @@ A powerful tool for detecting translation errors and language leakage in web pag
 
 ## Quick Start
 
-### Installation
+### Option 1: Docker (Recommended)
+
+The easiest way to get started is using Docker:
 
 ```bash
-# Install with Poetry (recommended)
+# Build the image
+./docker-run.sh build
+
+# Analyze a single URL
+./docker-run.sh url "https://example.com" en
+
+# Batch analysis from file
+./docker-run.sh batch examples/urls.txt es
+
+# Run examples
+./docker-run.sh examples
+
+# Interactive shell
+./docker-run.sh shell
+```
+
+### Option 2: Local Installation
+
+```bash
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run CLI
+python -m transqa.cli.main scan --url "https://example.com" --lang en
+```
+
+### Option 3: Poetry (Advanced)
+
+```bash
+# Install with Poetry
 poetry install
 
 # Install with extras for full functionality
 poetry install --extras "full"
 
-# Install browser for JavaScript rendering (optional)
-poetry run playwright install chromium
-```
-
-### Desktop Application
-
-```bash
-poetry run transqa gui
-```
-
-### CLI Usage
-
-```bash
-# Basic analysis
+# Run CLI
 poetry run transqa scan --url "https://example.com" --lang en
-
-# With JavaScript rendering and export
-poetry run transqa scan --url "https://example.com" --lang en --render --out report.json
-
-# Batch processing
-poetry run transqa scan --file urls.txt --lang es --parallel 4 --format csv
 ```
 
 ## Supported Languages
@@ -71,19 +87,49 @@ server_url = "http://localhost:8081"
 local_server = true
 ```
 
+## Docker Commands
+
+```bash
+# Build the Docker image
+./docker-run.sh build
+
+# Analyze a single URL
+./docker-run.sh url "https://example.com" en [output-name]
+
+# Batch analysis from file  
+./docker-run.sh batch examples/urls.txt es [output-name]
+
+# Show configuration
+./docker-run.sh config
+
+# Validate configuration
+./docker-run.sh validate
+
+# Run interactive shell
+./docker-run.sh shell
+
+# Run example analyses
+./docker-run.sh examples
+```
+
 ## Development
 
 ```bash
-# Setup development environment
+# Local development setup
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Or with Poetry
 poetry install --with dev
 poetry run pre-commit install
 
 # Run tests
-poetry run pytest
+pytest tests/
 
 # Format code
-poetry run black src/ tests/
-poetry run isort src/ tests/
+black src/ tests/
+isort src/ tests/
 ```
 
 ## License
