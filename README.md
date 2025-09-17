@@ -132,6 +132,44 @@ black src/ tests/
 isort src/ tests/
 ```
 
+## Contributing
+
+We welcome contributions! This is an open source project under the MIT License.
+
+### How to Contribute
+
+1. **Fork the repository**
+2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
+3. **Make your changes** and add tests
+4. **Follow code style**: Run `black` and `isort` on your code
+5. **Commit your changes**: `git commit -m '🚀 Add amazing feature'`
+6. **Push to the branch**: `git push origin feature/amazing-feature`
+7. **Open a Pull Request**
+
+### Areas for Contribution
+
+- 🌍 **Language Support**: Add support for more languages
+- 🔧 **Verifiers**: Implement new verification rules
+- 🎨 **UI/UX**: Improve the desktop and web interfaces
+- 📖 **Documentation**: Improve docs and examples
+- 🧪 **Testing**: Add more test cases and coverage
+- 🐛 **Bug Fixes**: Help identify and fix issues
+
 ## License
 
-MIT License - see LICENSE file for details.
+**MIT License** © 2025 TransQA Project
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for full details.
+
+### What this means:
+- ✅ **Free to use** for personal and commercial projects
+- ✅ **Free to modify** and distribute
+- ✅ **Free to contribute** back to the project
+- ✅ **No warranty** - use at your own risk
+
+## Support
+
+- 📖 **Documentation**: Check the docs and examples
+- 🐛 **Issues**: Report bugs via GitHub Issues
+- 💡 **Feature Requests**: Suggest improvements via GitHub Issues
+- 🤝 **Community**: Join discussions and help others

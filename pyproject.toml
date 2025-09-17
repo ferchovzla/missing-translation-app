@@ -6,9 +6,28 @@ build-backend = "poetry.core.masonry.api"
 name = "transqa"
 version = "0.1.0"
 description = "Web Translation QA Tool - Detect translation errors and language leakage"
-authors = ["Translation QA Team"]
+authors = ["TransQA Project Contributors"]
 license = "MIT"
 readme = "README.md"
+homepage = "https://github.com/your-username/missing-translation-app"
+repository = "https://github.com/your-username/missing-translation-app"
+documentation = "https://github.com/your-username/missing-translation-app#readme"
+keywords = ["translation", "qa", "quality-assurance", "web", "language-detection", "i18n", "localization"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Localization",
+    "Topic :: Text Processing :: Linguistic",
+    "Topic :: Internet :: WWW/HTTP :: Browsers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+]
 packages = [{include = "transqa", from = "src"}]
 
 [tool.poetry.dependencies]

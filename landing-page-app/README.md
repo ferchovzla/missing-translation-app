@@ -227,11 +227,30 @@ docker run -d \
 
 ## Contributing
 
-1. Follow the existing code style
-2. Add tests for new features
-3. Update documentation
-4. Ensure responsive design works on all devices
+We welcome contributions to improve the TransQA web interface!
+
+### Development Guidelines
+
+1. **Follow existing code style** (JavaScript ES6+, modern CSS)
+2. **Add tests** for new API features
+3. **Update documentation** and API specs
+4. **Ensure responsive design** works on all devices
+5. **Test across browsers** (Chrome, Firefox, Safari, Edge)
+
+### Common Contributions
+
+- 🎨 **UI/UX improvements** for better user experience
+- 📱 **Mobile optimization** and accessibility
+- 🔧 **API endpoint enhancements**
+- 📖 **Documentation and examples**
+- 🧪 **Frontend testing and validation**
 
 ## License
 
-Same as TransQA main project (MIT License).
+**MIT License** - This component is part of the TransQA project.
+
+This landing page and API system is licensed under the MIT License - see the main [LICENSE](../LICENSE) file for full details.
+
+- ✅ **Free for personal and commercial use**
+- ✅ **Modify and distribute freely**  
+- ✅ **Contribute back to the community**
