@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  transqa-web:
+    build:
+      context: ..  # Build from parent directory to access TransQA source
+      dockerfile: landing-page-app/Dockerfile
+    ports:
+      - "127.0.0.1:8000:8000"  # Solo accesible desde localhost
+    volumes:
+      - ./static:/app/static:ro
+      - ./templates:/app/templates:ro
+      - ../transqa.toml:/app/transqa.toml:ro
+      - ../whitelist.txt:/app/whitelist.txt:ro
+      - /var/log/transqa:/app/logs  # Logs persistentes
+    environment:
+      - PYTHONPATH=/app/src:/app
+      - LOG_LEVEL=INFO
+      - WORKERS=4
+    command: |
+      sh -c "
+        pip install gunicorn[gthread] &&
+        gunicorn api.main:app 
+          -w 4 
+          -k uvicorn.workers.UvicornWorker 
+          --bind 0.0.0.0:8000 
+          --timeout 120 
+          --max-requests 1000 
+          --max-requests-jitter 100 
+          --access-logfile /app/logs/access.log 
+          --error-logfile /app/logs/error.log
+      "
+    restart: unless-stopped
+    depends_on:
+      - languagetool
+    networks:
+      - transqa-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      
+  languagetool:
+    image: erikvl87/languagetool:latest
+    ports:
+      - "127.0.0.1:8081:8010"  # Solo accesible desde localhost
+    environment:
+      - Java_Xms=512m
+      - Java_Xmx=2g  # Más memoria para producción
+      - langtool_languageModel=/ngrams  # Modelos de lenguaje
+    volumes:
+      - languagetool_ngrams:/ngrams
+    restart: unless-stopped
+    networks:
+      - transqa-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8010/v2/languages"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+
+volumes:
+  languagetool_ngrams:
+    driver: local
+
+networks:
+  transqa-network:
+    driver: bridge
