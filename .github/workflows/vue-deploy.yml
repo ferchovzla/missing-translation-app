@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths: 
       - 'landing-page-app/vue-frontend/**'
+      - '.github/workflows/vue-deploy.yml'
   workflow_dispatch:
 
 permissions:
