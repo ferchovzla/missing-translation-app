@@ -1,0 +1,110 @@
+# Docker Compose for Vue.js + FastAPI TransQA deployment
+
+services:
+  # TransQA Web Application with Vue.js frontend
+  transqa-vue:
+    build:
+      context: ..
+      dockerfile: landing-page-app/Dockerfile.vue
+    container_name: transqa-vue
+    environment:
+      - PYTHONPATH=/app/src:/app
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - WORKERS=${WORKERS:-4}
+      - LANGUAGETOOL_URL=http://languagetool:8010
+      - STATIC_FILES_DIR=/app/static
+    volumes:
+      - transqa_logs:/app/logs
+      - transqa_cache:/app/cache
+      - transqa_models:/app/models
+    command: |
+      sh -c "
+        pip install gunicorn[gthread] &&
+        gunicorn api.main:app 
+          -w ${WORKERS:-4} 
+          -k uvicorn.workers.UvicornWorker 
+          --bind 0.0.0.0:8000 
+          --timeout 120 
+          --max-requests 1000 
+          --max-requests-jitter 100 
+          --access-logfile /app/logs/access.log 
+          --error-logfile /app/logs/error.log
+      "
+    restart: unless-stopped
+    depends_on:
+      - languagetool
+    networks:
+      - transqa-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # LanguageTool Grammar Service
+  languagetool:
+    image: erikvl87/languagetool:latest
+    container_name: transqa-languagetool
+    environment:
+      - Java_Xms=512m
+      - Java_Xmx=${LANGUAGETOOL_MEMORY:-2g}
+      - langtool_languageModel=/ngrams
+    volumes:
+      - languagetool_ngrams:/ngrams
+    restart: unless-stopped
+    networks:
+      - transqa-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8010/v2/languages"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 120s
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: transqa-nginx
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/vue.conf:/etc/nginx/conf.d/default.conf:ro
+      - nginx_ssl:/etc/nginx/ssl
+      - nginx_logs:/var/log/nginx
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+    restart: unless-stopped
+    depends_on:
+      - transqa-vue
+    networks:
+      - transqa-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  transqa_logs:
+    driver: local
+  transqa_cache:
+    driver: local
+  transqa_models:
+    driver: local
+  languagetool_ngrams:
+    driver: local
+  nginx_ssl:
+    driver: local
+  nginx_logs:
+    driver: local
+
+networks:
+  transqa-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+
